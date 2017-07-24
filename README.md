@@ -8,10 +8,12 @@ First running through the steps and going to the latest download of aspnet core 
 ## Problem #2
 Configuring EF core migrations I had to navigate to the folder in the BackEnd project which has the startup.cs file in and run - dotnet add package Microsoft.EntityFrameworkCore.Tools.DotNet - as per the ef core issue - https://github.com/aspnet/EntityFramework/issues/7838. In addition to running the previous package add command the tooling references in the csproj file needed updating to use the preview2 final versions:
 
+```
   <ItemGroup>
     <DotNetCliToolReference Include="Microsoft.VisualStudio.Web.CodeGeneration.Tools" Version="2.0.0-preview2-final" />
     <DotNetCliToolReference Include="Microsoft.EntityFrameworkCore.Tools.DotNet" Version="2.0.0-preview2-final" />
   </ItemGroup>
+```
 
 
 ## Problem #3
@@ -25,14 +27,18 @@ A number of class references could not be resolved / found in the preview so I h
 ## Problem #5
 After the refactor and the additional data structures additional ef migration commands needed to be run. After running:
 
+```
 dotnet ef migrations add Refactor
 dotnet ef database update
+```
 
 The output from the powershell window indicated the Build failure.
 
 On running dotnet run the following error was presented to me:
 
+```
 C:\Users\Adam\Documents\Visual Studio 2017\Projects\Workshop\BackEnd\BackEnd.csproj : error NU1003: PackageTargetFallback and AssetTargetFallback cannot be used together. Remove PackageTargetFallback(deprecated) references from the project environment
+```
 
 This got my head scratching for a bit and I turned to google and found - https://github.com/dotnet/cli/issues/6952 - and after a helpful response I was able to get past the issue. Essentially the issue came down to the way, as far as I am aware, that target frameworks or TFMs(?) are resolved from the project. On replacing PackageTargetFallback with AssetTargetFallback the error turned to an expected warning and I was able to continue.
 
@@ -56,16 +62,19 @@ Add auth features does not explicitly specify which site it needs adding to - it
 ## Problem #9
 The signature of IAuthorizationService.AuthorizeAsync does not return a bool anymore but it returns a AuthorizationResult. Need to update the IsAdmin usage as well as the AuthzTagHelper usage to use:
 
+```C#
 var result = await _authorizationService.AuthorizeAsync(User, "Admin");
 IsAdmin = result.Succeeded;
-
+```
 
 ## Problem #10
 The tag helper assumes there is an action on the account controller called "Login" which there is not so the href of the anchor needs updating to point to the login page. While I was trying to debug the tag helper I found that the break point would not hit and "log in" and "log out" links would display all of the time. To resolve this I made sure I had the correct version of the Microsoft.AspNetCore.Razor.Runtime package installed - 2.0.0-preview2-final - and also made sure that the project tag helper reference was added to /Pages/_ViewImports.cshtml
 
+```C#
 @namespace FrontEnd.Pages
 @addTagHelper *, Microsoft.AspNetCore.Mvc.TagHelpers
 @addTagHelper *, FrontEnd
+```
 
 ## Outstanding issues
 * Unable to get Twitter authentication to work however Google works fine
