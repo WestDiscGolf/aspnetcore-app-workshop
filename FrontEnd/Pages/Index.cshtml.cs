@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
 using FrontEnd.Services;
-using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.Mvc.RazorPages;
 using ConferenceDTO;
 using Microsoft.AspNetCore.Authorization;
@@ -29,6 +28,11 @@ namespace FrontEnd.Pages
 
         public int CurrentDayOffset { get; set; }
 
+        protected virtual Task<List<SessionResponse>> GetSessionsAsync()
+        {
+            return _apiClient.GetSessionsAsync();
+        }
+
         public async Task OnGet(int day = 0)
         {
             var result = await _authorizationService.AuthorizeAsync(User, "Admin");
@@ -36,7 +40,7 @@ namespace FrontEnd.Pages
             
             CurrentDayOffset = day;
 
-            var sessions = await _apiClient.GetSessionsAsync();
+            var sessions = await GetSessionsAsync();
 
             var startDate = sessions.Min(s => s.StartTime?.Date);
             var endDate = sessions.Max(s => s.EndTime?.Date);

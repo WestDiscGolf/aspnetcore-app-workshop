@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Net.Http;
+using FrontEnd.Filters;
 using FrontEnd.Services;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
@@ -21,19 +22,6 @@ namespace FrontEnd
         // This method gets called by the runtime. Use this method to add services to the container.
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddMvc()
-                    .AddRazorPagesOptions(options =>
-            {
-                options.AuthorizeFolder("/admin", "Admin");
-            });
-
-            var httpClient = new HttpClient
-            {
-                BaseAddress = new Uri(Configuration["serviceUrl"])
-            };
-            services.AddSingleton(httpClient);
-            services.AddSingleton<IApiClient, ApiClient>();
-
             services.AddCookieAuthentication(options =>
             {
                 options.LoginPath = "/Login";
@@ -68,6 +56,25 @@ namespace FrontEnd
                     policy.RequireAuthenticatedUser().RequireUserName(Configuration["admin"]);
                 });
             });
+
+            services.AddMvc(options =>
+                {
+                    options.Filters.AddService(typeof(RequireLoginFilter));
+                })
+                .AddRazorPagesOptions(options =>
+                {
+                    options.AuthorizeFolder("/admin", "Admin");
+                });
+            
+            services.AddTransient<RequireLoginFilter>();
+
+            var httpClient = new HttpClient
+            {
+                BaseAddress = new Uri(Configuration["serviceUrl"])
+            };
+            services.AddSingleton(httpClient);
+            services.AddSingleton<IApiClient, ApiClient>();
+
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.

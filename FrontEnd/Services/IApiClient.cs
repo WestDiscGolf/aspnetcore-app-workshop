@@ -1,5 +1,6 @@
 ﻿using ConferenceDTO;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Threading.Tasks;
@@ -17,6 +18,9 @@ namespace FrontEnd.Services
         Task AddAttendeeAsync(Attendee attendee);
         Task<AttendeeResponse> GetAttendeeAsync(string name);
         Task DeleteSessionAsync(int id);
+        Task<List<SessionResponse>> GetSessionsByAttendeeAsync(string name);
+        Task AddSessionToAttendeeAsync(string name, int sessionId);
+        Task RemoveSessionFromAttendeeAsync(string name, int sessionId);
     }
 
     public class ApiClient : IApiClient
@@ -85,6 +89,42 @@ namespace FrontEnd.Services
             {
                 return;
             }
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task<List<SessionResponse>> GetSessionsByAttendeeAsync(string name)
+        {   
+            var sessionsTask = GetSessionsAsync();
+            var attendeeTask = GetAttendeeAsync(name);
+
+            await Task.WhenAll(sessionsTask, attendeeTask);
+
+            var sessions = await sessionsTask;
+            var attendee = await attendeeTask;
+
+            if (attendee == null)
+            {
+                return new List<SessionResponse>();
+            }
+
+            var sessionIds = attendee.Sessions.Select(s => s.ID);
+
+            sessions.RemoveAll(s => !sessionIds.Contains(s.ID));
+
+            return sessions;
+        }
+
+        public async Task AddSessionToAttendeeAsync(string name, int sessionId)
+        {
+            var response = await _httpClient.PostAsync($"/api/attendees/{name}/session/{sessionId}", null);
+
+            response.EnsureSuccessStatusCode();
+        }
+
+        public async Task RemoveSessionFromAttendeeAsync(string name, int sessionId)
+        {
+            var response = await _httpClient.DeleteAsync($"/api/attendees/{name}/session/{sessionId}");
 
             response.EnsureSuccessStatusCode();
         }
